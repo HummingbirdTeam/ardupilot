@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_Notify.h>
+#include "AP_Notify.h"
 
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_type AP_Notify::flags;
@@ -30,11 +30,6 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #else
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
 #endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
-    AP_BoardLED boardled;
-    ExternalLED externalled;
-    Buzzer buzzer;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &externalled, &buzzer};
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     Buzzer buzzer;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
@@ -51,6 +46,22 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         NavioLED_I2C navioled;
         ToshibaLED_I2C toshibaled;
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &navioled, &toshibaled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+        ToshibaLED_I2C toshibaled;
+        NotifyDevice *AP_Notify::_devices[] = {&toshibaled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+        ToshibaLED_I2C toshibaled;
+        ToneAlarm_Linux tonealarm;
+        NotifyDevice *AP_Notify::_devices[] = {&toshibaled, &tonealarm};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+        NotifyDevice *AP_Notify::_devices[0];
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+        AP_BoardLED boardled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+        AP_BoardLED boardled;
+        RCOutputRGBLed bhled(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;

@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "RCInput.h"
@@ -7,7 +7,7 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-void SITLRCInput::init(void* machtnichts)
+void SITLRCInput::init()
 {
     clear_overrides();
 }

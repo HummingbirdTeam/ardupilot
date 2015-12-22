@@ -1,8 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 #include "AC_AttitudeControl_Multi.h"
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+
+// get lean angle max for pilot input that prioritises altitude hold over lean angle
+float AC_AttitudeControl_Multi::get_althold_lean_angle_max() const
+{
+    // calc maximum tilt angle based on throttle
+    float thr_max = _motors_multi.throttle_max();
+    return ToDeg(acos(constrain_float(_throttle_in_filt.get()/(0.9f * thr_max / 1000.0f), 0.0f, 1000.0f) / 1000.0f)) * 100.0f;
+}
 
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1000

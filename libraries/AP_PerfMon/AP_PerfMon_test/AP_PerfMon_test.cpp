@@ -3,16 +3,14 @@
   Code by Randy Mackay
 */
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
-#include <StorageManager.h>
-#include <AP_PerfMon.h>        // PerfMonitor library
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_PerfMon/AP_PerfMon.h>        // PerfMonitor library
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_PERFMON_REGISTER_FN(setup)
 AP_PERFMON_REGISTER_FN(loop)
@@ -23,7 +21,7 @@ void setup()
 {
   AP_PERFMON_FUNCTION(setup)
 
-  hal.console->print_P(PSTR("Performance Monitor test v1.1\n"));
+  hal.console->print("Performance Monitor test v1.1\n");
 }
 
 void loop()

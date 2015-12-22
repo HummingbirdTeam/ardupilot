@@ -1,14 +1,14 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Gimbal.h>
+#include "AP_Gimbal.h"
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
 #include <stdio.h>
-#include <AP_Common.h>
-#include <GCS.h>
-#include <AP_SmallEKF.h>
-#include "AP_Math.h"
+#include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_NavEKF/AP_SmallEKF.h>
+#include <AP_Math/AP_Math.h>
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
@@ -119,9 +119,9 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
         float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate; 
         if (vehicle_rate_mag_ef > maxRate) {
             if (vehicle_rate_ef.z>0.0f){
-                gimbalRateDemVecYaw += _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
+                gimbalRateDemVecYaw += _ahrs.get_rotation_body_to_ned().transposed()*Vector3f(0,0,excess_rate_correction);
             } else {
-                gimbalRateDemVecYaw -= _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
+                gimbalRateDemVecYaw -= _ahrs.get_rotation_body_to_ned().transposed()*Vector3f(0,0,excess_rate_correction);
             }
         }
 

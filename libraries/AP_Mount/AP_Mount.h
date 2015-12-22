@@ -22,13 +22,13 @@
 #ifndef __AP_MOUNT_H__
 #define __AP_MOUNT_H__
 
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_GPS.h>
-#include <AP_AHRS.h>
-#include <GCS_MAVLink.h>
-#include "../RC_Channel/RC_Channel.h"
-#include "../AP_SerialManager/AP_SerialManager.h"
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <RC_Channel/RC_Channel.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
@@ -102,7 +102,7 @@ public:
     void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNT_DEFLT_MODE parameter
-    //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
+    //      this operation requires 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
@@ -113,6 +113,10 @@ public:
     // set_roi_target - sets target location that mount should attempt to point towards
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
+
+    // control - control the mount
+    void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode) { control(_primary, pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode); }
+    void control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode);
 
     // configure_msg - process MOUNT_CONFIGURE messages received from GCS
     void configure_msg(mavlink_message_t* msg) { configure_msg(_primary, msg); }

@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_SITL_ANALOG_IN_H__
 #define __AP_HAL_SITL_ANALOG_IN_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
 
 #define SITL_INPUT_MAX_CHANNELS 12
@@ -37,7 +37,7 @@ public:
     SITLAnalogIn(SITL_State *sitlState) {
         _sitlState = sitlState;
     }
-    void init(void* ap_hal_scheduler);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void) {
         return 5.0f;

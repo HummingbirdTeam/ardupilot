@@ -20,10 +20,11 @@
  *       Code by Randy Mackay. DIYDrones.com
  */
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 class OpticalFlow_backend;
+class AP_AHRS_NavEKF;
 
 class OpticalFlow
 {
@@ -31,7 +32,7 @@ class OpticalFlow
 
 public:
     // constructor
-    OpticalFlow(void);
+    OpticalFlow(AP_AHRS_NavEKF& ahrs);
 
     // init - initialise sensor
     void init(void);

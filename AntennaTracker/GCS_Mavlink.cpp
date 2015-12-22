@@ -8,9 +8,6 @@
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
-// check if a message will fit in the payload space available
-#define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
-
 /*
  *  !!NOTE!!
  *
@@ -72,7 +69,7 @@ void Tracker::send_attitude(mavlink_channel_t chan)
     Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
-        hal.scheduler->millis(),
+        AP_HAL::millis(),
         ahrs.roll,
         ahrs.pitch,
         ahrs.yaw,
@@ -88,7 +85,7 @@ void Tracker::send_location(mavlink_channel_t chan)
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
         fix_time = gps.last_fix_time_ms();
     } else {
-        fix_time = hal.scheduler->millis();
+        fix_time = AP_HAL::millis();
     }
     const Vector3f &vel = gps.velocity();
     mavlink_msg_global_position_int_send(
@@ -108,7 +105,7 @@ void Tracker::send_radio_out(mavlink_channel_t chan)
 {
     mavlink_msg_servo_output_raw_send(
         chan,
-        hal.scheduler->micros(),
+        AP_HAL::micros(),
         0,     // port
         hal.rcout->read(0),
         hal.rcout->read(1),
@@ -165,11 +162,19 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
+void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+{
+    // do nothing
+}
+
+void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
+{
+    // do nothing
+}
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
 {
-    uint16_t txspace = comm_get_txspace(chan);
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
@@ -255,6 +260,15 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         tracker.send_hwstatus(chan);
         break;
+    case MSG_MAG_CAL_PROGRESS:
+        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
+        tracker.compass.send_mag_cal_progress(chan);
+        break;
+
+    case MSG_MAG_CAL_REPORT:
+        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
+        tracker.compass.send_mag_cal_report(chan);
+        break;
 
     case MSG_SERVO_OUT:
     case MSG_EXTENDED_STATUS1:
@@ -276,6 +290,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_EKF_STATUS_REPORT:
     case MSG_PID_TUNING:
     case MSG_VIBRATION:
+    case MSG_RPM:
+    case MSG_MISSION_ITEM_REACHED:
         break; // just here to prevent a warning
     }
     return true;
@@ -285,7 +301,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 /*
   default stream rates to 1Hz
  */
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
     // @Description: Raw sensor stream rate to ground station
@@ -452,6 +468,8 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
         send_message(MSG_SIMSTATE);
+        send_message(MSG_MAG_CAL_REPORT);
+        send_message(MSG_MAG_CAL_PROGRESS);
     }
 }
 
@@ -581,7 +599,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
         
         // do command
-        send_text_P(SEVERITY_LOW,PSTR("command received: "));
+        send_text(MAV_SEVERITY_INFO,"Command received: ");
         
         switch(packet.command) {
             
@@ -606,11 +624,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (is_equal(packet.param5,1.0f)) {
                     float trim_roll, trim_pitch;
                     AP_InertialSensor_UserInteract_MAVLink interact(this);
+                    // start with gyro calibration
+                    tracker.ins.init_gyro();
+                    // reset ahrs gyro bias
+                    if (tracker.ins.gyro_calibrated_ok_all()) {
+                        tracker.ahrs.reset_gyro_drift();
+                    }
                     if(tracker.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                         // reset ahrs's trim to suggested values from calibration routine
                         tracker.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                     }
                 } else if (is_equal(packet.param5,2.0f)) {
+                    // start with gyro calibration
+                    tracker.ins.init_gyro();
                     // accel trim
                     float trim_roll, trim_pitch;
                     if(tracker.ins.calibrate_trim(trim_roll, trim_pitch)) {
@@ -640,6 +666,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_UNSUPPORTED;
                 }
             break;
+
+            case MAV_CMD_GET_HOME_POSITION:
+                send_home(tracker.ahrs.get_home());
+                result = MAV_RESULT_ACCEPTED;
+                break;
 
             case MAV_CMD_DO_SET_MODE:
                 switch ((uint16_t)packet.param1) {
@@ -684,11 +715,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
                 if (is_equal(packet.param1,1.0f)) {
-                    tracker.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+                    tracker.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
                     result = MAV_RESULT_ACCEPTED;
                 }
                 break;
             }
+
+            case MAV_CMD_DO_START_MAG_CAL:
+            case MAV_CMD_DO_ACCEPT_MAG_CAL:
+            case MAV_CMD_DO_CANCEL_MAG_CAL:
+                result = tracker.compass.handle_mag_cal_command(packet);
+                break;
 
             default:
                 break;
@@ -791,7 +828,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // check if this is the HOME wp
         if (packet.seq == 0) {
             tracker.set_home(tell_command); // New home in EEPROM
-            send_text_P(SEVERITY_LOW,PSTR("new HOME received"));
+            send_text(MAV_SEVERITY_INFO,"New HOME received");
             waypoint_receiving = false;
         }
 
@@ -837,7 +874,6 @@ mission_failed:
         break;
     }
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, tracker.gps);
         break;
@@ -846,10 +882,8 @@ mission_failed:
         handle_gps_inject(msg, tracker.gps);
         break;
 
-#endif
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        tracker.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+        tracker.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     } // end switch
@@ -869,7 +903,7 @@ void Tracker::mavlink_delay_cb()
 
     in_mavlink_delay = true;
 
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_message(MSG_HEARTBEAT);
@@ -883,7 +917,7 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     in_mavlink_delay = false;
 }
@@ -924,15 +958,15 @@ void Tracker::gcs_update(void)
     }
 }
 
-void Tracker::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
+void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].send_text_P(severity, str);
+            gcs[i].send_text(severity, str);
         }
     }
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message_P(str);
+    DataFlash.Log_Write_Message(str);
 #endif
 }
 
@@ -941,12 +975,12 @@ void Tracker::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Tracker::gcs_send_text_fmt(const prog_char_t *fmt, ...)
+void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
+    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
 #if LOGGING_ENABLED == ENABLED
@@ -968,4 +1002,3 @@ void Tracker::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
 }
-

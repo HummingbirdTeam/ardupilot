@@ -21,15 +21,15 @@
 
 #ifndef AP_PARAM_H
 #define AP_PARAM_H
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
 #include "float.h"
 
-#include <AP_Progmem.h>
-#include <../StorageManager/StorageManager.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <StorageManager/StorageManager.h>
 
 #define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
@@ -141,6 +141,11 @@ public:
     /// @param	buffer			The destination buffer
     /// @param	bufferSize		Total size of the destination buffer.
     ///
+    void copy_name_info(const struct AP_Param::Info *info, const struct GroupInfo *ginfo, uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
+    /// Copy the variable's name, prefixed by any containing group name, to a
+    /// buffer.
+    ///
+    /// Uses token to look up AP_Param::Info for the variable
     void copy_name_token(const ParamToken &token, char *buffer, size_t bufferSize, bool force_scalar=false) const;
 
     /// Find a variable by name.
@@ -152,7 +157,6 @@ public:
     ///                         it does not exist.
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
-    static AP_Param * find_P(const prog_char_t *name, enum ap_var_type *ptype);
 
     /// Find a variable by index.
     ///
@@ -170,6 +174,13 @@ public:
     /// @param  name            The full name of the variable to be found.
     ///
     static AP_Param * find_object(const char *name);
+
+    /// Notify GCS of current parameter value
+    ///
+    void notify() const;
+
+    // send a parameter to all GCS instances
+    void send_parameter(char *name, enum ap_var_type param_header_type) const;
 
     /// Save the current value of the variable to EEPROM.
     ///
@@ -198,13 +209,10 @@ public:
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
-
     /*
-      set a parameter by name
-
-      The parameter pointer is returned on success
+      set a parameter to a float
     */
-    static AP_Param *set_param_by_name(const char *pname, float value, enum ap_var_type *ptype);
+    void set_float(float value, enum ap_var_type var_type);
 
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
@@ -227,7 +235,7 @@ public:
     static void         erase_all(void);
 
     /// print the value of all variables
-    static void         show_all(AP_HAL::BetterStream *port);
+    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
 
     /// print the value of one variable
     static void         show(const AP_Param *param, 
@@ -261,6 +269,15 @@ public:
 
     // check var table for consistency
     static bool             check_var_info(void);
+
+    // return true if the parameter is configured in the defaults file
+    bool configured_in_defaults_file(void);
+
+    // return true if the parameter is configured in EEPROM/FRAM
+    bool configured_in_storage(void);
+
+    // return true if the parameter is configured
+    bool configured(void) { return configured_in_defaults_file() || configured_in_storage(); }
 
 private:
     /// EEPROM header
@@ -314,7 +331,7 @@ private:
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
-                                    uint8_t *                 idx);
+                                    uint8_t *                 idx) const;
     const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo **  group_ret,
@@ -418,6 +435,21 @@ public:
     ///
     void set(const T &v) {
         _value = v;
+    }
+
+    /// Sets if the parameter is unconfigured
+    ///
+    void set_default(const T &v) {
+        if (!configured()) {
+            set(v);
+        }
+    }
+    
+    /// Value setter - set value, tell GCS
+    ///
+    void set_and_notify(const T &v) {
+        set(v);
+        notify();
     }
 
     /// Combined set and save

@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -64,23 +64,23 @@ bool TCPServerDevice::open()
     listener.reuseaddress();
 
     if (!listener.bind(_ip, _port)) {
-        if (hal.scheduler->millis() - _last_bind_warning > 5000) {
+        if (AP_HAL::millis() - _last_bind_warning > 5000) {
             ::printf("bind failed on %s port %u - %s\n",
                      _ip,
                      _port,
                      strerror(errno));
-            _last_bind_warning = hal.scheduler->millis();
+            _last_bind_warning = AP_HAL::millis();
         }
         return false;
     }
 
     if (!listener.listen(1)) {
-        if (hal.scheduler->millis() - _last_bind_warning > 5000) {
+        if (AP_HAL::millis() - _last_bind_warning > 5000) {
             ::printf("listen failed on %s port %u - %s\n",
                      _ip,
                      _port,
                      strerror(errno));
-            _last_bind_warning = hal.scheduler->millis();
+            _last_bind_warning = AP_HAL::millis();
         }
         return false;
     }

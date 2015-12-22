@@ -21,11 +21,8 @@
  */
 
 #include "AP_Motors_Class.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
-
-// initialise motor map
-    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {MOTOR_TO_CHANNEL_MAP};
 
 // Constructor
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :

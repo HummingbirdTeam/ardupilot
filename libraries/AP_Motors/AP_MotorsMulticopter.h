@@ -15,7 +15,7 @@
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 #define AP_MOTORS_THR_LOW_CMP_DEFAULT   0.5f    // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
-#define AP_MOTORS_THST_EXPO_DEFAULT     0.5f    // set to 0 for linear and 1 for second order approximation
+#define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
 #define AP_MOTORS_THST_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_THST_BAT_MAX_DEFAULT  0.0f
 #define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
@@ -26,7 +26,7 @@
 #define AP_MOTORS_THR_MIX_MAX_DEFAULT   0.5f    // maximum throttle mix default
 
 // To-Do: replace this hard coded counter with a timer
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  // slow start increments - throttle increase per (100hz) iteration.  i.e. 5 = full speed in 2 seconds
  #define AP_MOTOR_SLOW_START_INCREMENT           10      // max throttle ramp speed (i.e. motors can reach full throttle in 1 second)
  #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   2       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 1 second)
@@ -62,6 +62,7 @@ public:
     // returns warning throttle
     float               get_throttle_warn() const { return rel_pwm_to_thr_range(_spin_when_armed); }
 
+    int16_t             throttle_max() const { return _max_throttle; }
     int16_t             throttle_min() const { return rel_pwm_to_thr_range(_min_throttle); }
 
     // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)

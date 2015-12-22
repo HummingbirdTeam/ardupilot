@@ -3,7 +3,7 @@
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
-#include <AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 // Just so that it's completely clear...
 #define ENABLED                 1
@@ -30,9 +30,9 @@ enum autopilot_yaw_mode {
 #define CH6_PWM_TRIGGER_LOW     1200
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
-#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
-#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
-#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
+#define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
+#define AUX_SWITCH_HIGH             2       // indicates auxiliary switch is in the high position (pwm >1800)
 
 // Aux Switch enumeration
 enum aux_sw_func {
@@ -184,7 +184,8 @@ enum GuidedMode {
     Guided_TakeOff,
     Guided_WP,
     Guided_Velocity,
-    Guided_PosVel
+    Guided_PosVel,
+    Guided_Angle,
 };
 
 // RTL states
@@ -199,6 +200,7 @@ enum RTLState {
 // Alt_Hold states
 enum AltHoldModeState {
     AltHold_Disarmed,
+    AltHold_MotorStop,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
@@ -207,6 +209,7 @@ enum AltHoldModeState {
 // Loiter states
 enum LoiterModeState {
     Loiter_Disarmed,
+    Loiter_MotorStop,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
@@ -250,6 +253,7 @@ enum FlipState {
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
+#define LOG_PRECLAND_MSG                0x21
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -350,6 +354,7 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
+#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -368,7 +373,6 @@ enum FlipState {
 #define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
-// subsystem specific error codes -- autotune
 
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2

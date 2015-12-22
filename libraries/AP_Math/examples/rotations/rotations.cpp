@@ -2,42 +2,11 @@
 //
 // Unit tests for the AP_Math rotations code
 //
-#include <AP_HAL.h>
-#include <stdlib.h>
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_SITL.h>
-#include <AP_HAL_Empty.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_Linux.h>
-#include <AP_Math.h>
-#include <Filter.h>
-#include <AP_ADC.h>
-#include <SITL.h>
-#include <AP_Compass.h>
-#include <AP_Baro.h>
-#include <AP_Notify.h>
-#include <AP_InertialSensor.h>
-#include <AP_GPS.h>
-#include <DataFlash.h>
-#include <GCS_MAVLink.h>
-#include <AP_Mission.h>
-#include <StorageManager.h>
-#include <AP_Terrain.h>
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <AP_AHRS.h>
-#include <AP_NavEKF.h>
-#include <AP_Airspeed.h>
-#include <AP_Vehicle.h>
-#include <AP_ADC_AnalogSource.h>
-#include <AP_Rally.h>
-#include <AP_BattMonitor.h>
-#include <AP_RangeFinder.h>
-#include <AP_OpticalFlow.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static void print_vector(Vector3f &v)
 {
@@ -54,7 +23,7 @@ static void test_rotation_accuracy(void)
     int16_t i;
     float rot_angle;
 
-    hal.console->println_P(PSTR("\nRotation method accuracy:"));
+    hal.console->println("\nRotation method accuracy:");
 
     for( i=0; i<90; i++ ) {
 
@@ -72,8 +41,8 @@ static void test_rotation_accuracy(void)
         attitude.to_euler(&roll, &pitch, &yaw);
 
         // display results
-        hal.console->printf_P(
-                PSTR("actual angle: %d\tcalculated angle:%4.2f\n"),
+        hal.console->printf(
+                "actual angle: %d\tcalculated angle:%4.2f\n",
                 (int)i,ToDeg(yaw));
     }
 }

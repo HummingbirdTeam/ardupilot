@@ -19,10 +19,10 @@
 /// @brief	handle routing of MAVLink packets by sysid/componentid
 
 #include <stdio.h>
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <GCS.h>
-#include <MAVLink_routing.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "GCS.h"
+#include "MAVLink_routing.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -132,7 +132,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     for (uint8_t i=0; i<num_routes; i++) {
         if (broadcast_system || (target_system == routes[i].sysid &&
                                  (broadcast_component || 
-                                  target_component == routes[i].compid))) {
+                                  target_component == routes[i].compid ||
+                                  !match_system))) {
             if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel]) {
                 if (comm_get_txspace(routes[i].channel) >= 
                     ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {

@@ -2,13 +2,18 @@
 #ifndef __AP_HAL_LINUX_UARTDRIVER_H__
 #define __AP_HAL_LINUX_UARTDRIVER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 #include "SerialDevice.h"
 
-class Linux::LinuxUARTDriver : public AP_HAL::UARTDriver {
+class Linux::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    LinuxUARTDriver(bool default_console);
+    UARTDriver(bool default_console);
+
+    static UARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<UARTDriver*>(uart);
+    }
+
     /* Linux implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);

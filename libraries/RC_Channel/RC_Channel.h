@@ -6,8 +6,8 @@
 #ifndef __RC_CHANNEL_H__
 #define __RC_CHANNEL_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 
 #define RC_CHANNEL_TYPE_ANGLE       0
 #define RC_CHANNEL_TYPE_RANGE       1
@@ -78,9 +78,6 @@ public:
     // call after first set_pwm
     void        trim();
 
-    // did our read come in 50µs below the min?
-    bool        get_failsafe(void);
-
     // value generated from PWM
     int16_t         control_in;
 
@@ -137,6 +134,8 @@ public:
     static const struct AP_Param::GroupInfo         var_info[];
 
     static RC_Channel *rc_channel(uint8_t i);
+
+    bool in_trim_dz();
 
 private:
     AP_Int8         _reverse;

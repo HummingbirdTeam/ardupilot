@@ -2,16 +2,16 @@
 #ifndef __AP_HAL_SITL_RCINPUT_H__
 #define __AP_HAL_SITL_RCINPUT_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 
 class HALSITL::SITLRCInput : public AP_HAL::RCInput {
 public:
     SITLRCInput(SITL_State *sitlState) {
         _sitlState = sitlState;
     }
-    void init(void* machtnichts);
+    void init();
     bool  new_input();
     uint8_t num_channels() {
         return 8;
